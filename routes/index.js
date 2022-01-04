@@ -27,7 +27,7 @@ router.get('/calendar', function (req, res) {
     filename += ".ics";
 
     client.authorize(login, password).then(function () {
-        client.calendar.getTimetable().then(data => { splitDays(JSON.parse(JSON.stringify(data)), filename) });
+        client.calendar.getTimetable().then(data => { if (data.length > 0) splitDays(JSON.parse(JSON.stringify(data)), filename); else res.end()});
     })
 
     let interval = setInterval(() => { if (file) res.send(current_url + "calendars/" + filename); clearInterval(interval) }, 1000)
