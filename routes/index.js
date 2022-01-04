@@ -2,12 +2,13 @@
 const express = require('express');
 const Librus = require('librus-api');
 const { writeFile } = require('fs');
-const uuidv4 = require("uuid/v4")
+const uuidv4 = require("uuid/v4");
+const randomWords = require('random-words');
 const router = express.Router();
 
 var raw_data;
 var calendar = ``;
-var filename = '';
+var filename = randomWords({ exactly: 5, join: '-' }) + ".ics";
 
 let saved = false;
 
@@ -24,12 +25,11 @@ router.get('/calendar', function (req, res) {
     let client = new Librus();
     const current_url = req.protocol + '://' + req.get('host') + "/";
 
-    let login = req.query.login;
-    let password = req.query.password;
-    filename = req.query.filename + ".ics";
-    let to_date = req.query.to_date.split('-');
+    let login = req.query.synergiaLogin;
+    let password = req.query.synergiaPassword;
+    let to_date = req.query.toDate.split('-');
 
-    if (login == "" || password == "" || filename == "" || to_date == "") res.redirect(current_url)
+    if (login == "" || password == "" || to_date == "") res.redirect(current_url)
     else {
         client.authorize(login, password).then(function () {
             client.calendar.getTimetable().then(data => { if (data.hours.length > 0) raw_data = data; else { res.redirect(current_url) } });
