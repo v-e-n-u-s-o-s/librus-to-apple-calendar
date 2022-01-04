@@ -2,9 +2,21 @@
 <body>
     <form action="/calendar" method="get">
         <input name="login" type="text" placeholder="Login"/>
-        <input name="password" type="text" placeholder="Password"/>
+        <input name="password" type="password" placeholder="Password"/>
         <input name="filename" type="text" placeholder="Name of the calendar"/>
+        <input name="to_date" type="date" value="2022-06-24"/>
         <button type="submit">Send</button>
     </form>
+    <button id="filename" type="button">Your file url will appear here</button>
+    <script>
+        let url = new URL(window.location.href);
+        try {
+            let filename = url.searchParams.get("url");
+            document.getElementById("filename").innerHTML = filename;
+        } catch (error) {
+            console.log(error);
+        }
+        
+    </script>
 </body>
 </html>

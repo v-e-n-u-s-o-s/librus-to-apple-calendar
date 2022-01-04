@@ -1,13 +1,13 @@
 {
   "name": "librus-to-apple-calendar",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "node app"
   },
   "description": "librus-to-apple-calendar",
   "author": {
-    "name": ""
+    "name": "Jan Piekło"
   },
   "dependencies": {
     "body-parser": "^1.15.0",
@@ -15,10 +15,8 @@
     "debug": "^2.2.0",
     "express": "^4.14.0",
     "fs": "^0.0.1-security",
-    "ics": "^2.35.0",
     "librus-api": "^2.5.0",
     "morgan": "^1.7.0",
-    "node-fetch": "^3.1.0",
     "pug": "^3.0.2",
     "serve-favicon": "^2.3.0"
   }

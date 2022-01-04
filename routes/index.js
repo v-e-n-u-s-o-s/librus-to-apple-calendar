@@ -1,105 +1,135 @@
 'use strict';
 const express = require('express');
-const router = express.Router();
 const Librus = require('librus-api');
-const fs = require('fs');
-const ics = require('ics');
+const { writeFile } = require('fs');
+const uuidv4 = require("uuid/v4")
+const router = express.Router();
 
-let client = new Librus();
-let filename = "";
-let file = false;
+var raw_data;
+var calendar = ``;
+var filename = '';
+
+let saved = false;
 
 module.exports = router;
 
 router.get('/', function (req, res) {
-    res.sendFile()
+    if (!res.query.calendar) res.sendFile()
+    else {
+        res.send(current_url + "calendars/" + filename)
+    }
 })
 
 router.get('/calendar', function (req, res) {
+    let client = new Librus();
     const current_url = req.protocol + '://' + req.get('host') + "/";
 
     let login = req.query.login;
     let password = req.query.password;
-    filename = req.query.filename;
+    filename = req.query.filename + ".ics";
+    let to_date = req.query.to_date.split('-');
 
-    if (login == "" || password == "" || filename == "") res.end()
+    if (login == "" || password == "" || filename == "" || to_date == "") res.redirect(current_url)
+    else {
+        client.authorize(login, password).then(function () {
+            client.calendar.getTimetable().then(data => { if (data.hours.length > 0) raw_data = data; else { res.redirect(current_url) } });
+        })
 
-    filename += ".ics";
+        createCalendar();
 
-    client.authorize(login, password).then(function () {
-        client.calendar.getTimetable().then(data => { if (data.length > 0) splitDays(JSON.parse(JSON.stringify(data)), filename); else res.end()});
-    })
+        let day_iterator = 0;
+        let year, month, day, hour, minute, duration, title, teacher, category, temp, to_year, to_month, to_day;
 
-    let interval = setInterval(() => { if (file) res.send(current_url + "calendars/" + filename); clearInterval(interval) }, 1000)
+        Object.keys(raw_data.table).forEach(function (days) {
+            for (let hours = 0; hours < raw_data.hours.length; hours++) {
+                if (raw_data.table[days][hours]) {
+                    year = getPreviousMonday().getFullYear();
+                    month = getPreviousMonday().getUTCMonth() + 1;
+                    day = getPreviousMonday().getUTCDate() + day_iterator;
+                    temp = raw_data.hours[hours].split('-')[0].split(":");
+                    hour = temp[0].replace(" ", "").trim();
+                    minute = temp[1].replace(" ", "").trim();
+                    duration = 45;
+                    temp = raw_data.table[days][hours].title.split('-');
+                    title = temp[0];
+                    teacher = temp[1];
+                    category = "lesson";
+                    to_year = to_date[0];
+                    to_month = to_date[1];
+                    to_day = to_date[2];
+                    addEvent(year, month, day, hour, minute, duration, title, teacher, category, to_year, to_month, to_day);
+                }
+                else continue;
+            }
+            day_iterator++;
+        })
+
+        endCalendar();
+        saveCalendar();
+
+        let interval = setInterval(() => { if (saved) res.redirect(current_url + "?url=" + current_url + "calendars/" + filename); clearInterval(interval) }, 500)
+    }
 });
 
-
-
-function splitDays(data, filename, ammount = 1) {
-    let day = 0;
-    var callendar =
-`
-BEGIN: VCALENDAR
+function createCalendar() {
+    calendar =
+        `BEGIN: VCALENDAR
 VERSION: 2.0
 CALSCALE: GREGORIAN
-PRODID: adamgibbons / ics
+PRODID: 金星軸 / v-e-n-u-s-o-s
 METHOD: PUBLISH
 X - PUBLISHED - TTL: PT1H
 `;
+}
 
-    function getPreviousMonday() {
-        var date = new Date();
-        var day = date.getDay();
-        var prevMonday = new Date();
-        if (date.getDay() == 0) {
-            return date;
-        }
-        else {
-            prevMonday.setDate(date.getDate() - (day - 1));
-        }
+function endCalendar() {
+    calendar += "END:VCALENDAR";
+}
 
-        return prevMonday;
+function saveCalendar() {
+    writeFile("./public/calendars/" + filename, calendar, function (err) {
+        if (err) throw err;
+        saved = true;
+    });
+}
+
+function getPreviousMonday() {
+    var date = new Date();
+    var day = date.getDay();
+    var prevMonday = new Date();
+    if (date.getDay() == 0) {
+        return date;
     }
-
-    function saveCalendar(data, filename) {
-        fs.writeFile("./public/calendars/" + filename, data + "END:VCALENDAR", function (err) {
-            if (err) throw err;
-            file = true;
-        });
+    else {
+        prevMonday.setDate(date.getDate() - (day - 1));
     }
+    return prevMonday;
+}
 
-    function addEvent(time, day, month, title, teacher) {
-        time = time.split('-')[0].replace(" ", "").split(":")
-        let event = {
-            start: [getPreviousMonday().getUTCFullYear(), Number(month), Number(day), Number(time[0]), Number(time[1])],
-            duration: { minutes: 45 },
-            title: title,
-            categories: ['lesson'],
-            organizer: { name: teacher },
-        }
+function daysInMonth(month, year) {
+    return new Date(year, month, 0).getDate();
+}
 
-        return ics.createEvent(event, (error, value) => {
-            if (error) {
-                console.log(error)
-                return
-            }
-            return value.split("\n").slice(6).join("\n").replace(/\r?\n?[^\r\n]*$/, "").replace(/\r?\n?[^\r\n]*$/, "");
-        })
-    }
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
-    Object.keys(data.table).forEach(function (key) {
-        for (let i = 0; i < data.hours.length; i++) {
-            if (data.table[key][i]) {
-                let _temp = data.table[key][i].title.split('-');
-                callendar += addEvent(data.hours[i], day, _temp[0].replace("\n", ""), _temp[1].replace("\n", ""));
-            }
-            else {
-                continue;
-            }
-            callendar += "\n";
-        }
-        day++;
-    })
+function addEvent(year, month, day, hour, minute, duration, title, teacher, category, to_year, to_month, to_day) {
+    [year, month, day, hour, minute, duration, title, teacher, category] = [year.toString(), month.toString(), day.toString(), hour.toString(), minute.toString(), duration.toString(), title.toString(), teacher.toString(), category.toString()]
 
-    saveCalendar(callendar, filename);
+    if (month.length < 2) month = "0" + month;
+    if (day.length < 2) day = "0" + day;
+    if (hour.length < 2) hour = "0" + hour;
+    if (minute.length < 2) minute = "0" + minute;
+
+    calendar += `BEGIN:VEVENT
+UID:${uuidv4()}
+SUMMARY:${capitalizeFirstLetter(title)}
+DTSTART:${year}${month}${day}T${hour}${minute}00
+DURATION:PT${duration}M
+RRULE:FREQ=WEEKLY;UNTIL=${to_year}${to_month}${to_day}T000000
+ORGANIZER:CN=${teacher}
+CATEGORIES:${capitalizeFirstLetter(category)}
+END:VEVENT
+`
 }
