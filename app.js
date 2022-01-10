@@ -2,6 +2,7 @@
 var debug = require('debug')('my express app');
 var express = require('express');
 var path = require('path');
+var favicon = require('serve-favicon');
     
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
