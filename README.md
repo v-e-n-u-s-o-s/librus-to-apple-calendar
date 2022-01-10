@@ -1,2 +1,2 @@
-# librus-to-apple-calendar
+# librus timetable to .ics calendar
  
