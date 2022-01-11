@@ -6,38 +6,47 @@ var tools = require('./tools');
 let saved;
 
 function addEvent(year, month, day, hour, minute, duration, title, teacher, category, to_year, to_month, to_day) {
-    [year, month, day, hour, minute, duration, title, teacher, category] = [year.toString(), month.toString(), day.toString(), hour.toString(), minute.toString(), duration.toString(), title.toString(), teacher.toString(), category.toString()]
+    let date = new Date();
+    let now_year, now_month, now_day, now_hour, now_minutes, now_seconds;
+    [year, month, day, hour, minute, duration, title, teacher, category, now_year, now_month, now_day, now_hour, now_minutes, now_seconds] = [year.toString(), month.toString(), day.toString(), hour.toString(), minute.toString(), duration.toString(), title.toString(), teacher.toString(), category.toString(), date.getFullYear().toString(), (date.getMonth() + 1).toString(), date.getDate().toString(), date.getHours().toString(), date.getMinutes().toString(), date.getSeconds().toString()]
 
     if (month.length < 2) month = "0" + month;
     if (day.length < 2) day = "0" + day;
     if (hour.length < 2) hour = "0" + hour;
     if (minute.length < 2) minute = "0" + minute;
+    if (now_year.length < 2) now_year = "0" + now_year;
+    if (now_month.length < 2) now_month = "0" + now_month;
+    if (now_day.length < 2) now_day = "0" + now_day;
+    if (now_hour.length < 2) now_hour = "0" + now_hour;
+    if (now_minutes.length < 2) now_minutes = "0" + now_minutes;
+    if (now_seconds.length < 2) now_seconds = "0" + now_seconds;
 
-    return `BEGIN:VEVENT
-UID:${uuidv4()}
-SUMMARY:${tools.capitalizeFirstLetter(title)}
-DTSTART:${year}${month}${day}T${hour}${minute}00
-DURATION:PT${duration}M
-RRULE:FREQ=WEEKLY;UNTIL=${to_year}${to_month}${to_day}T000000
-ORGANIZER:CN=${teacher}
-CATEGORIES:${tools.capitalizeFirstLetter(category)}
-END:VEVENT
-`
+    let event = `BEGIN:VEVENT` + '\r\n';
+    event += `UID:${uuidv4()}@librustocalendar.ddns.net` + '\r\n';
+    event += `SUMMARY:${tools.capitalizeFirstLetter(title)}` + '\r\n';
+    event += `DTSTAMP:${now_year}${now_month}${now_day}T${now_hour}${now_minutes}${now_seconds}` + '\r\n';
+    event += `DTSTART:${year}${month}${day}T${hour}${minute}00` + '\r\n';
+    event += `DURATION:PT${duration}M` + '\r\n';
+    event += `RRULE:FREQ=WEEKLY;UNTIL=${to_year}${to_month}${to_day}T000000` + '\r\n';
+    event += `ORGANIZER:CN=${teacher}` + '\r\n';
+    event += `CATEGORIES:${tools.capitalizeFirstLetter(category)}` + '\r\n';
+    event += `END:VEVENT` + '\r\n';
+
+    return event;
 }
 
 module.exports = {
     startCalendar: function () {
-        return `BEGIN: VCALENDAR
-VERSION: 2.0
-CALSCALE: GREGORIAN
-PRODID: 金星軸 / v-e-n-u-s-o-s
-METHOD: PUBLISH
-X - PUBLISHED - TTL: PT1H
-`;
+        let beginning = "BEGIN:VCALENDAR" + '\r\n';
+        beginning += "VERSION:2.0" + '\r\n';
+        beginning += "PRODID:-//v-e-n-u-s-o-s//Librus to calendar//EN" + '\r\n';
+        beginning += "CALSCALE:GREGORIAN" + '\r\n';
+        beginning += "METHOD:PUBLISH" + '\r\n';
+        return beginning;
     },
 
     endCalendar: function (data) {
-        return data + `END:VCALENDAR`;
+        return data + "END:VCALENDAR";
     },
 
     saveCalendar: function (filename, data) {
@@ -75,8 +84,8 @@ X - PUBLISHED - TTL: PT1H
                                 minute = temp[1].replace(" ", "").trim();
                                 duration = 45;
                                 temp = data.table[days][hours].title.split('-');
-                                title = temp[0];
-                                teacher = temp[1];
+                                title = temp[0].trim();
+                                teacher = temp[1].trim();
                                 category = "lesson";
                                 to_year = length[0];
                                 to_month = length[1];

@@ -1,1 +1,1 @@
-tmux new -d -s calendar "bash --init-file <(cd librus-to-apple-calendar/ && npm start)"
+sudo pm2 start librus-to-apple-calendar/app.js
